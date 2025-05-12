@@ -1,1 +1,1 @@
-# ComfyUI_EUP_Pack
+This in Progess Package, not Stable Yet
