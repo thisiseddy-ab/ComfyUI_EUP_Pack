@@ -1,7 +1,6 @@
-from math import gcd
-
 #### My Services's #####
 from EUP.services.image import ImageService
+from EUP.nodes.aspect_ratio import AspectRatioService, CustomAspectRatio
 
 class GetImageSize:
 
@@ -44,18 +43,15 @@ class CustomImageSize:
     CATEGORY = "EUP - Ultimate Pack/image"
 
     def execute(self, biggest_size, width, height):
-        # Reduce aspect ratio to smallest integer form
-        divisor = gcd(width, height)
-        aspect_ratio_str = f"{width // divisor}:{height // divisor}"
-
-        # Scale dimensions while preserving aspect ratio
-        if width >= height:
-            scale_factor = biggest_size / width
-        else:
-            scale_factor = biggest_size / height
-
-        new_width = int(round(width * scale_factor))
-        new_height = int(round(height * scale_factor))
+        closest_aspect_ratio = AspectRatioService.find_closest(
+            width=width,
+            height=height,
+            aspect_ratios=CustomAspectRatio.ASPECT_RATIO,
+        )
+        new_width, new_height, aspect_ratio_str = AspectRatioService.calculate_dimensions(
+            biggest_size=biggest_size,
+            aspect_ratio=closest_aspect_ratio,
+        )
 
         return (new_width, new_height, aspect_ratio_str)
     

@@ -1,5 +1,59 @@
 import torch
 
+
+class AspectRatioService:
+    """Small helper for parsing and calculating EUP aspect ratios."""
+
+    @staticmethod
+    def get_ratio_part(aspect_ratio: str) -> str:
+        return aspect_ratio.split(" - ", 1)[0].strip()
+
+    @staticmethod
+    def parse_ratio(aspect_ratio: str) -> tuple[float, float]:
+        ratio_part = AspectRatioService.get_ratio_part(aspect_ratio)
+        try:
+            width_part, height_part = ratio_part.split(":", 1)
+            ratio_width = float(width_part.strip())
+            ratio_height = float(height_part.strip())
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid aspect ratio: {aspect_ratio!r}") from exc
+
+        if ratio_width <= 0 or ratio_height <= 0:
+            raise ValueError(f"Aspect ratio values must be positive: {aspect_ratio!r}")
+
+        return ratio_width, ratio_height
+
+    @staticmethod
+    def ratio_value(aspect_ratio: str) -> float:
+        ratio_width, ratio_height = AspectRatioService.parse_ratio(aspect_ratio)
+        return ratio_width / ratio_height
+
+    @staticmethod
+    def find_closest(width: int, height: int, aspect_ratios: list[str]) -> str:
+        if width <= 0 or height <= 0:
+            raise ValueError("Width and height must be positive values.")
+
+        source_ratio = width / height
+        return min(
+            aspect_ratios,
+            key=lambda aspect_ratio: abs(AspectRatioService.ratio_value(aspect_ratio) - source_ratio),
+        )
+
+    @staticmethod
+    def calculate_dimensions(biggest_size: int, aspect_ratio: str) -> tuple[int, int, str]:
+        ratio_part = AspectRatioService.get_ratio_part(aspect_ratio)
+        ratio_width, ratio_height = AspectRatioService.parse_ratio(ratio_part)
+
+        if ratio_width >= ratio_height:
+            width = biggest_size
+            height = round(width * ratio_height / ratio_width)
+        else:
+            height = biggest_size
+            width = round(height * ratio_width / ratio_height)
+
+        return max(1, int(width)), max(1, int(height)), ratio_part
+
+
 class CustomAspectRatio():
     ASPECT_RATIO = [
                         ## Square ##
@@ -129,19 +183,10 @@ class CustomAspectRatio():
     CATEGORY = "EUP - Ultimate Pack/Essential"
 
     def Aspect_Ratio(self, biggest_size, aspect_ratio, upscale_factor, batch_size):
-         # Extract numerical aspect ratio
-        real_aspect_ratio = aspect_ratio.split(" - ")[0]
-        aspect_ratio_width, aspect_ratio_height = map(int, real_aspect_ratio.split(":"))
-        
-        # Adjust the biggest size to ensure perfect aspect ratio fit
-        if aspect_ratio_width > aspect_ratio_height:  # Landscape
-            width = (biggest_size // aspect_ratio_width) * aspect_ratio_width
-            height = (width * aspect_ratio_height) // aspect_ratio_width
-        else:  # Portrait or Square
-            height = (biggest_size // aspect_ratio_height) * aspect_ratio_height
-            width = (height * aspect_ratio_width) // aspect_ratio_height
-
-             
+        width, height, real_aspect_ratio = AspectRatioService.calculate_dimensions(
+            biggest_size=biggest_size,
+            aspect_ratio=aspect_ratio,
+        )
         latent = torch.zeros([batch_size, 4, height // 8, width // 8])
            
         return(width, height, real_aspect_ratio, upscale_factor, batch_size, {"samples":latent})
