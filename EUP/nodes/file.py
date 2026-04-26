@@ -9,6 +9,7 @@ class CollectionImageSavePrefix:
                 "collection": ("STRING", {"default": ""}),
                 "prefix": (["txt2img", "img2img", "upscale"],),
                 "prefix_extra": ("STRING", {"default": ""}),
+                "orientation": ("STRING", {"default": ""}),
                 "uuid": ("STRING", {"default": ""}),
                 "aspect_ratio": ("STRING", {"default": "16-9"}),
             }
@@ -19,14 +20,15 @@ class CollectionImageSavePrefix:
     FUNCTION = "generate"
     CATEGORY = "Utility"
 
-    def generate(self, collection, prefix, prefix_extra, uuid, aspect_ratio):
+    def generate(self, collection, prefix, prefix_extra, orientation, uuid, aspect_ratio):
         collection = self.sanitizePathComponent(collection)
         prefix = self.sanitizePathComponent(prefix)
         prefix_extra = self.sanitizePathComponent(prefix_extra)
+        orientation = self.sanitizePathComponent(orientation)
         uuid = self.sanitizePathComponent(uuid)
         aspect_ratio = self.sanitizePathComponent(aspect_ratio)
 
-        safe_path = os.path.join(f"{uuid}-{collection}", prefix, aspect_ratio, f"{prefix}-{prefix_extra}")
+        safe_path = os.path.join(f"{uuid}-{collection}", prefix, orientation, aspect_ratio, f"{prefix}-{prefix_extra}")
         return (safe_path,)
     
     def sanitizePathComponent(self, component: str) -> str:
